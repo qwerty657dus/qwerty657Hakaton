@@ -23,17 +23,16 @@ login_manager.login_message = 'Пожалуйста, войдите для до�
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 
 with app.app_context():
     db.create_all()
     sync_materials_table(db, Material)
 
-    # Создаём первого администратора, если нет ни одного
-    admin = User.query.filter_by(is_admin=True).first()
+    # Первый администратор (если нет ни одного)
+    admin = db.session.query(User).filter_by(is_admin=True).first()
     if not admin:
-        # Создаём тестового администратора
         admin_user = User(
             phone='79001234567',
             full_name='Администратор Системы',
@@ -43,7 +42,7 @@ with app.app_context():
         )
         db.session.add(admin_user)
         db.session.commit()
-        logger.info("Created default admin: 79001234567 / admin123")
+        logger.info("Default admin created: 79001234567 / admin123")
 
 
 def admin_required(f):
@@ -59,7 +58,6 @@ def admin_required(f):
 
 
 def normalize_phone(phone: str) -> str:
-    """Приводит номер к формату 79001234567."""
     digits = ''.join(filter(str.isdigit, phone))
     if not digits:
         return ''
@@ -73,8 +71,8 @@ def normalize_phone(phone: str) -> str:
 
 @app.route('/')
 def index():
-    # Исключаем администраторов из рейтинга
-    users = User.query.filter_by(is_verified=True, is_admin=False).all()
+    # Рейтинг (топ-10 обычных подтверждённых пользователей)
+    users = db.session.query(User).filter_by(is_verified=True, is_admin=False).all()
     rating = []
     for u in users:
         rating.append({
@@ -83,7 +81,48 @@ def index():
             'points': u.get_total_points()
         })
     rating.sort(key=lambda x: x['points'], reverse=True)
-    return render_template('index.html', rating=rating)
+    top_rating = rating[:10]
+
+    # Данные для графика
+    personal_dates = []
+    personal_weights = []
+    if current_user.is_authenticated:
+        subs = (db.session.query(
+            db.func.date(Submission.created_at).label('date'),
+            db.func.sum(Submission.weight_kg).label('total_weight'))
+                .filter(Submission.user_id == current_user.id)
+                .group_by(db.func.date(Submission.created_at))
+                .order_by('date')
+                .all())
+        for row in subs:
+            # row.date уже строка от func.date()
+            personal_dates.append(str(row.date))
+            personal_weights.append(round(row.total_weight, 2))
+
+    # Среднее по всем обычным пользователям
+    all_subs = (db.session.query(
+        db.func.date(Submission.created_at).label('date'),
+        db.func.sum(Submission.weight_kg).label('total_weight'),
+        db.func.count(db.distinct(Submission.user_id)).label('user_count'))
+                .join(User, Submission.user_id == User.id)
+                .filter(User.is_admin == False)
+                .group_by(db.func.date(Submission.created_at))
+                .order_by('date')
+                .all())
+
+    avg_dates = []
+    avg_weights = []
+    for row in all_subs:
+        avg_weight = round(row.total_weight / row.user_count, 2) if row.user_count else 0
+        avg_dates.append(str(row.date))
+        avg_weights.append(avg_weight)
+
+    return render_template('index.html',
+                           rating=top_rating,
+                           personal_dates=personal_dates,
+                           personal_weights=personal_weights,
+                           avg_dates=avg_dates,
+                           avg_weights=avg_weights)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -93,9 +132,7 @@ def register():
     form = RegistrationForm()
     if form.validate_on_submit():
         phone_clean = normalize_phone(form.phone.data)
-
-        # Проверка на существующего пользователя
-        existing_user = User.query.filter_by(phone=phone_clean).first()
+        existing_user = db.session.query(User).filter_by(phone=phone_clean).first()
         if existing_user:
             flash('Этот номер телефона уже зарегистрирован.', 'danger')
             return render_template('register.html', form=form)
@@ -114,8 +151,6 @@ def register():
         db.session.commit()
 
         logger.info(f"New user registered: {user.phone}, code: {code}")
-
-        # Формируем сообщение
         message = f"Код подтверждения EcoBird: {code}"
 
         if send_sms(user.phone, message):
@@ -130,7 +165,9 @@ def register():
 
 @app.route('/verify/<int:user_id>', methods=['GET', 'POST'])
 def verify(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id)
+    if not user:
+        abort(404)
     if user.is_verified:
         flash('Аккаунт уже подтверждён.', 'info')
         return redirect(url_for('login'))
@@ -151,7 +188,9 @@ def verify(user_id):
 
 @app.route('/resend_code/<int:user_id>')
 def resend_code(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id)
+    if not user:
+        abort(404)
     if user.is_verified:
         flash('Аккаунт уже подтверждён.', 'info')
         return redirect(url_for('login'))
@@ -179,7 +218,7 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         phone_clean = normalize_phone(form.phone.data)
-        user = User.query.filter_by(phone=phone_clean).first()
+        user = db.session.query(User).filter_by(phone=phone_clean).first()
         if user and check_password_hash(user.password_hash, form.password.data):
             if not user.is_verified:
                 flash('Аккаунт не подтверждён. Пожалуйста, подтвердите номер телефона.', 'warning')
@@ -213,7 +252,7 @@ def profile():
 @app.route('/admin')
 @admin_required
 def admin_dashboard():
-    users = User.query.all()
+    users = db.session.query(User).all()
     return render_template('admin/dashboard.html', users=users)
 
 
@@ -221,19 +260,18 @@ def admin_dashboard():
 @admin_required
 def add_submission():
     form = AddSubmissionForm()
-    users = User.query.filter_by(is_verified=True).all()
+    users = db.session.query(User).filter_by(is_verified=True).all()
     form.user_id.choices = [(u.id, f"{u.full_name} ({u.phone})") for u in users]
-    materials = Material.query.all()
+    materials = db.session.query(Material).all()
     form.material_key.choices = [(m.key, f"{m.name} (коэф. {m.coefficient})") for m in materials]
 
-    # Предзаполняем пользователя, если передан параметр user_id
     preselected_user_id = request.args.get('user_id', type=int)
     if preselected_user_id and request.method == 'GET':
         form.user_id.data = preselected_user_id
 
     if form.validate_on_submit():
-        user = User.query.get(form.user_id.data)
-        material = Material.query.get(form.material_key.data)
+        user = db.session.get(User, form.user_id.data)
+        material = db.session.get(Material, form.material_key.data)
         weight = form.weight_kg.data
         points = weight * material.coefficient
         submission = Submission(
@@ -256,30 +294,28 @@ def add_submission():
 @app.route('/admin/users')
 @admin_required
 def admin_users():
-    users = User.query.order_by(User.created_at.desc()).all()
+    users = db.session.query(User).order_by(User.created_at.desc()).all()
     return render_template('admin/users.html', users=users)
 
 
 @app.route('/api/user/<int:user_id>/submissions')
 @admin_required
 def api_user_submissions(user_id):
-    """API для получения истории сдачи конкретного пользователя"""
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id)
+    if not user:
+        abort(404)
     submissions = user.submissions.order_by(Submission.created_at.desc()).all()
-
     result = {
         'user_name': user.full_name,
         'user_phone': user.phone,
         'total_points': user.get_total_points(),
         'submissions': []
     }
-
     for sub in submissions:
         admin_name = None
         if sub.admin_id:
-            admin = User.query.get(sub.admin_id)
+            admin = db.session.get(User, sub.admin_id)
             admin_name = admin.full_name if admin else None
-
         result['submissions'].append({
             'id': sub.id,
             'created_at': sub.created_at.isoformat(),
@@ -290,15 +326,12 @@ def api_user_submissions(user_id):
             'points': sub.points,
             'admin_name': admin_name
         })
-
     return jsonify(result)
 
 
 @app.route('/api/rating')
 def api_rating():
-    """API для получения рейтинга"""
-    # Исключаем администраторов из рейтинга
-    users = User.query.filter_by(is_verified=True, is_admin=False).all()
+    users = db.session.query(User).filter_by(is_verified=True, is_admin=False).all()
     rating = []
     for u in users:
         rating.append({
@@ -326,6 +359,5 @@ def internal_server_error(e):
 
 
 if __name__ == '__main__':
-    # Получаем порт из переменной окружения или используем 5000 по умолчанию
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
