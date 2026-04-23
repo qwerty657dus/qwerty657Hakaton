@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">➕ Добавить сдачу вторсырья</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.user_id.label(class="form-label") }}
+                        {{ form.user_id(class="form-select") }}
+                        {% if form.user_id.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.user_id.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="text-muted">Выберите пользователя, который сдал вторсырьё</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.material_key.label(class="form-label") }}
+                        {{ form.material_key(class="form-select") }}
+                        {% if form.material_key.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.material_key.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="text-muted">Выберите тип вторсырья</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.weight_kg.label(class="form-label") }}
+                        {{ form.weight_kg(class="form-control", placeholder="Введите вес в килограммах", step="0.01", min="0.01") }}
+                        {% if form.weight_kg.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.weight_kg.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="text-muted">Вес указывается в килограммах. Для штучных материалов переведите в кг</small>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-success btn-lg") }}
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-muted">
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                    ← Назад в админ-панель
+                </a>
+            </div>
+        </div>
+        
+        <!-- Памятка по коэффициентам -->
+        <div class="card mt-4 shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">📊 Справочник коэффициентов</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Материал</th>
+                            <th>Коэффициент</th>
+                            <th>Примечание</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Железо / Чермет</td><td>1.5</td><td>-</td></tr>
+                        <tr><td>Алюминий / Банки</td><td>4.0</td><td>Высокий коэффициент</td></tr>
+                        <tr><td>Стекло тарное</td><td>1.0</td><td>-</td></tr>
+                        <tr><td>ПЭТ-бутылка</td><td>3.5</td><td>-</td></tr>
+                        <tr><td>Пакеты / Плёнка LDPE</td><td>4.5</td><td>Редко принимают</td></tr>
+                        <tr><td>Крышки пластиковые</td><td>8.0</td><td>Мелкая фракция</td></tr>
+                        <tr><td>Пластиковые карты</td><td>12.0</td><td>Сложный ПВХ</td></tr>
+                        <tr><td>Тетра-Пак</td><td>7.0</td><td>Многослойный материал</td></tr>
+                        <tr><td>CD / DVD диски</td><td>15.0</td><td>Максимальный коэффициент</td></tr>
+                        <tr><td>Силикон</td><td>9.0</td><td>Редко перерабатывается</td></tr>
+                    </tbody>
+                </table>
+                <small class="text-muted">Баллы = Вес (кг) × Коэффициент</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

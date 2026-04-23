@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>👥 Управление пользователями</h2>
+    <div>
+        <a href="{{ url_for('add_submission') }}" class="btn btn-success me-2">
+            ➕ Добавить сдачу
+        </a>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+            ← Назад в админку
+        </a>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">📋 Список всех пользователей</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ФИО</th>
+                        <th>Телефон</th>
+                        <th>Статус</th>
+                        <th>Роль</th>
+                        <th>Баллы</th>
+                        <th>Сдач</th>
+                        <th>Дата регистрации</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>
+                            <strong>{{ user.full_name }}</strong>
+                        </td>
+                        <td>{{ user.phone }}</td>
+                        <td>
+                            {% if user.is_verified %}
+                                <span class="badge bg-success">✅ Подтверждён</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">⚠️ Не подтверждён</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.is_admin %}
+                                <span class="badge bg-danger">👑 Администратор</span>
+                            {% else %}
+                                <span class="badge bg-secondary">👤 Пользователь</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong class="text-success">{{ "%.2f"|format(user.get_total_points()) }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ user.submissions.count() }}</span>
+                        </td>
+                        <td>
+                            <small>{{ user.created_at.strftime('%d.%m.%Y') }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <!-- Кнопка для просмотра истории сдачи конкретного пользователя -->
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="viewUserHistory({{ user.id }})"
+                                        title="Просмотр истории сдачи">
+                                    📊 История
+                                </button>
+                                <!-- Кнопка для быстрого добавления сдачи этому пользователю -->
+                                <a href="{{ url_for('add_submission', user_id=user.id) }}" 
+                                   class="btn btn-sm btn-outline-success"
+                                   title="Добавить сдачу для этого пользователя">
+                                    ➕ Сдача
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                            🐦 Пока нет зарегистрированных пользователей
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer text-muted">
+        <small>👑 Администраторы могут добавлять сдачу для любого пользователя</small>
+    </div>
+</div>
+
+<!-- Модальное окно для просмотра истории пользователя -->
+<div class="modal fade" id="userHistoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">📊 История сдачи пользователя</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="userHistoryContent">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                    <p class="mt-2">Загрузка истории...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewUserHistory(userId) {
+    // Показываем модальное окно
+    const modal = new bootstrap.Modal(document.getElementById('userHistoryModal'));
+    modal.show();
+    
+    // Загружаем историю пользователя через API
+    fetch(`/api/user/${userId}/submissions`)
+        .then(response => response.json())
+        .then(data => {
+            const content = document.getElementById('userHistoryContent');
+            
+            if (data.submissions && data.submissions.length > 0) {
+                let html = `
+                    <div class="mb-3">
+                        <h6>👤 ${data.user_name}</h6>
+                        <p class="text-muted">📱 ${data.user_phone}</p>
+                        <p><strong>Всего баллов:</strong> <span class="text-success">${data.total_points.toFixed(2)}</span></p>
+                        <p><strong>Всего сдач:</strong> ${data.submissions.length}</p>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Материал</th>
+                                    <th>Вес (кг)</th>
+                                    <th>Коэф.</th>
+                                    <th>Баллы</th>
+                                    <th>Админ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                data.submissions.forEach(sub => {
+                    html += `
+                        <tr>
+                            <td>${new Date(sub.created_at).toLocaleString('ru-RU')}</td>
+                            <td>${sub.material_name}</td>
+                            <td>${sub.weight_kg.toFixed(2)}</td>
+                            <td>${sub.coefficient}</td>
+                            <td><strong class="text-success">${sub.points.toFixed(2)}</strong></td>
+                            <td>${sub.admin_name || '—'}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                content.innerHTML = html;
+            } else {
+                content.innerHTML = `
+                    <div class="text-center py-4">
+                        <p class="text-muted mb-0">📭 У этого пользователя пока нет записей о сдаче вторсырья</p>
+                        <a href="/admin/submissions/add?user_id=${userId}" class="btn btn-success mt-3">
+                            ➕ Добавить первую сдачу
+                        </a>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            document.getElementById('userHistoryContent').innerHTML = `
+                <div class="alert alert-danger">
+                    ❌ Ошибка загрузки данных: ${error.message}
+                </div>
+            `;
+        });
+}
+</script>
+{% endblock %}

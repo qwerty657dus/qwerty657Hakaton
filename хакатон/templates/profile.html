@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">👤 Профиль пользователя</h5>
+            </div>
+            <div class="card-body">
+                <h4>{{ user.full_name }}</h4>
+                <p class="text-muted">{{ user.phone }}</p>
+                <hr>
+                <div class="text-center">
+                    <h2 class="display-4 text-success">{{ "%.2f"|format(total_points) }}</h2>
+                    <p class="lead">Всего баллов</p>
+                </div>
+                <hr>
+                <p><strong>📅 Дата регистрации:</strong> {{ user.created_at.strftime('%d.%m.%Y') }}</p>
+                <p><strong>📦 Всего сдач:</strong> {{ submissions|length }}</p>
+                {% if user.is_admin %}
+                    <span class="badge bg-danger">👑 Администратор</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">📋 История сдачи вторсырья</h5>
+            </div>
+            <div class="card-body">
+                {% if submissions %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Материал</th>
+                                <th>Вес (кг)</th>
+                                <th>Баллы</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sub in submissions %}
+                            <tr>
+                                <td>{{ sub.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                                <td>{{ sub.material.name }}</td>
+                                <td>{{ "%.2f"|format(sub.weight_kg) }}</td>
+                                <td><strong class="text-success">{{ "%.2f"|format(sub.points) }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-success">
+                                <th colspan="3">Итого:</th>
+                                <th><strong>{{ "%.2f"|format(total_points) }}</strong></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted mb-2">У вас пока нет записей о сдаче вторсырья</p>
+                    <p>Найдите ближайший пункт приёма и начинайте зарабатывать баллы!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

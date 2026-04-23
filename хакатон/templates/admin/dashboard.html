@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>👑 Административная панель</h2>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">📊 Статистика</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Всего пользователей:</strong> {{ users|length }}</p>
+                <p><strong>Подтверждённых:</strong> {{ users|selectattr('is_verified', 'equalto', true)|list|length }}</p>
+                <p><strong>Администраторов:</strong> {{ users|selectattr('is_admin', 'equalto', true)|list|length }}</p>
+                <p><strong>Обычных пользователей:</strong> {{ users|selectattr('is_admin', 'equalto', false)|list|length }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">⚡ Быстрые действия</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('admin_users') }}" class="btn btn-outline-primary d-block mb-3">
+                    👥 Список пользователей
+                </a>
+                <a href="{{ url_for('add_submission') }}" class="btn btn-success d-block">
+                    ➕ Добавить сдачу вторсырья
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0">📋 Последние пользователи</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ФИО</th>
+                        <th>Телефон</th>
+                        <th>Статус</th>
+                        <th>Роль</th>
+                        <th>Баллы</th>
+                        <th>Дата регистрации</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users[-10:]|reverse %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.full_name }}</td>
+                        <td>{{ user.phone }}</td>
+                        <td>
+                            {% if user.is_verified %}
+                                <span class="badge bg-success">✅ Подтверждён</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">⚠️ Не подтверждён</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.is_admin %}
+                                <span class="badge bg-danger">Админ</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Юзер</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.get_total_points()|round(2) }}</td>
+                        <td>{{ user.created_at.strftime('%d.%m.%Y') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            Пока нет зарегистрированных пользователей
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

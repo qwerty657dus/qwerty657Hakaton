@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center mb-4">
+    <h1 class="display-4">🏆 Рейтинг эко-активистов</h1>
+    <p class="lead">Чем больше баллов — тем выше вклад в сохранение природы!</p>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">📊 Топ участников</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Место</th>
+                                <th>Участник</th>
+                                <th>Баллы</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in rating %}
+                            <tr>
+                                <td style="color: black; font-weight: bold;">
+                                    {% if loop.index == 1 %}
+                                        🥇 {{ loop.index }}
+                                    {% elif loop.index == 2 %}
+                                        🥈 {{ loop.index }}
+                                    {% elif loop.index == 3 %}
+                                        🥉 {{ loop.index }}
+                                    {% else %}
+                                        {{ loop.index }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ user.full_name }}</strong>
+                                    {% if user.id == current_user.id %}
+                                        <span class="badge bg-info ms-2">Вы</span>
+                                    {% endif %}
+                                </td>
+                                <td><strong class="text-success">{{ "%.2f"|format(user.points) }}</strong></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">
+                                    🐦 Пока нет участников. Зарегистрируйтесь первым!
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-body text-center">
+                <h5>🌍 Как начисляются баллы?</h5>
+                <p class="mb-0">Баллы = Вес вторсырья (кг) × Коэффициент материала</p>
+                <small class="text-muted">Чем сложнее переработать материал, тем выше коэффициент</small>
+                {% if not current_user.is_authenticated %}
+                    <hr>
+                    <a href="{{ url_for('register') }}" class="btn btn-success btn-lg mt-3">📝 Зарегистрироваться</a>
+                    <p class="mt-2">Уже есть аккаунт? <a href="{{ url_for('login') }}">Войти</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
