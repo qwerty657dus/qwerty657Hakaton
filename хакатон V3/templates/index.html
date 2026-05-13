@@ -1,0 +1,340 @@
+
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center mb-5">
+    <h1 class="display-4 mb-3">🏆 Рейтинг эко-активистов</h1>
+    <p class="lead text-muted">Чем больше баллов — тем больше вклад в сохранение природы!</p>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header">
+                <h4 class="mb-0">📊 Топ-10 участников</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Место</th>
+                                <th>Участник</th>
+                                <th class="text-end">Баллы</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in rating %}
+                            <tr>
+                                <td style="font-weight: bold; font-size: 1.1rem;">
+                                    {% if loop.index == 1 %}
+                                        🥇 {{ loop.index }}
+                                    {% elif loop.index == 2 %}
+                                        🥈 {{ loop.index }}
+                                    {% elif loop.index == 3 %}
+                                        🥉 {{ loop.index }}
+                                    {% else %}
+                                        {{ loop.index }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ user.full_name }}</strong>
+                                    {% if user.id == current_user.id %}
+                                        <span class="badge bg-info ms-2">Вы</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end"><strong style="color: var(--eco-green); font-size: 1.1rem;">{{ "%.2f"|format(user.points) }}</strong></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">
+                                    🐦 Пока нет участников. Зарегистрируйтесь первым!
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- График -->
+<div class="row mb-5">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header" style="background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%) !important;">
+                <h4 class="mb-0">📈 Динамика сдачи вторсырья по дням</h4>
+            </div>
+            <div class="card-body">
+                {% if current_user.is_authenticated or avg_dates|length > 0 %}
+                    <canvas id="wasteChart" width="400" height="200"></canvas>
+                    <div class="text-muted small mt-3">
+                        <p class="mb-1">💡 <strong>Ваша линия</strong> — суммарный вес сданного вами вторсырья по дням.</p>
+                        <p class="mb-0">📊 <strong>Среднее</strong> — средний вес сдачи одного участника по дням.</p>
+                    </div>
+                    {% if not current_user.is_authenticated %}
+                    <div class="alert alert-info mt-3 mb-0">
+                        🔐 <a href="{{ url_for('login') }}">Войдите</a>, чтобы увидеть вашу личную динамику на графике.
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <h5>📭 Пока нет данных для отображения</h5>
+                        <p class="mb-0">Начните сдавать вторсырьё, чтобы увидеть динамику!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Справочник коэффициентов -->
+<div class="row mb-5">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header" style="background: linear-gradient(90deg, #2980b9 0%, #3498db 100%) !important;">
+                <h4 class="mb-0">📋 Справочник коэффициентов вторсырья</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table coeff-table mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 40%;">📦 Материал</th>
+                                <th style="width: 15%;">🏷️ Категория</th>
+                                <th style="width: 15%;" class="text-center">💰 Коэффициент</th>
+                                <th style="width: 30%;">📝 Примечание</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- ПЛАСТИК -->
+                            <tr>
+                                <td><strong>ПЭТ-бутылка (1 PET/PETE) с крышкой</strong></td>
+                                <td><span class="coeff-group-badge coeff-group-plastic">Пластик</span></td>
+                                <td class="text-center"><span class="coeff-value">3.5</span></td>
+                                <td><span class="coeff-note">Бонус за крышку включен</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Канистры / Флаконы HDPE (2 PE-HD)</strong></td>
+                                <td><span class="coeff-group-badge coeff-group-plastic">Пластик</span></td>
+                                <td class="text-center"><span class="coeff-value">3.0</span></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Пакеты / Пленка LDPE (4 PE-LD, ПВД)</strong></td>
+                                <td><span class="coeff-group-badge coeff-group-plastic">Пластик</span></td>
+                                <td class="text-center"><span class="coeff-value">4.5</span></td>
+                                <td><span class="coeff-note">Редко принимают</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Мешки полипропиленовые (5 PP)</strong></td>
+                                <td><span class="coeff-group-badge coeff-group-plastic">Пластик</span></td>
+                                <td class="text-center"><span class="coeff-value">3.0</span></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Крышки пластиковые (кепки)</strong></td>
+                                <td><span class="coeff-group-badge coeff-group-plastic">Пластик</span></td>
+                                <td class="text-center"><span class="coeff-value">8.0</span></td>
+                                <td><span class="coeff-note">Мелкая фракция, высокий бонус</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Пластиковые карты / Дисконтные карты</strong></td>
+                                <td><span class="coeff-group-badge coeff-group-plastic">Пластик</span></td>
+                                <td class="text-center"><span class="coeff-value">12.0</span></td>
+                                <td><span class="coeff-note">~5 грамм за штуку</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Игрушки пластиковые (LEGO, конструкторы)</strong></td>
+                                <td><span class="coeff-group-badge coeff-group-plastic">Пластик</span></td>
+                                <td class="text-center"><span class="coeff-value">6.0</span></td>
+                                <td></td>
+                            </tr>
+                            <!-- МЕТАЛЛ -->
+                            <tr>
+                                <td><strong>Железо / Чермет (FE 40)</strong></td>
+                                <td><span class="coeff-group-badge coeff-group-metal">Металл</span></td>
+                                <td class="text-center"><span class="coeff-value">1.5</span></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Алюминий / Алюминиевые банки (ALU 41)</strong></td>
+                                <td><span class="coeff-group-badge coeff-group-metal">Металл</span></td>
+                                <td class="text-center"><span class="coeff-value">4.0</span></td>
+                                <td><span class="coeff-note">Высокий коэффициент</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Прочий металл (крепления, пластины)</strong></td>
+                                <td><span class="coeff-group-badge coeff-group-metal">Металл</span></td>
+                                <td class="text-center"><span class="coeff-value">2.0</span></td>
+                                <td></td>
+                            </tr>
+                            <!-- СТЕКЛО -->
+                            <tr>
+                                <td><strong>Стекло тарное (70-74 GL)</strong></td>
+                                <td><span class="coeff-group-badge coeff-group-glass">Стекло</span></td>
+                                <td class="text-center"><span class="coeff-value">1.0</span></td>
+                                <td></td>
+                            </tr>
+                            <!-- БУМАГА -->
+                            <tr>
+                                <td><strong>Книги (макулатура высокого качества)</strong></td>
+                                <td><span class="coeff-group-badge coeff-group-paper">Бумага</span></td>
+                                <td class="text-center"><span class="coeff-value">1.8</span></td>
+                                <td></td>
+                            </tr>
+                            <!-- КОМПОЗИТ -->
+                            <tr>
+                                <td><strong>Тетра-Пак / Пюр-Пак (C/PAP 84, PAP 21-22)</strong></td>
+                                <td><span class="coeff-group-badge coeff-group-composite">Композит</span></td>
+                                <td class="text-center"><span class="coeff-value">7.0</span></td>
+                                <td><span class="coeff-note">Многокомпонентный материал</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>CD / DVD диски (без коробки)</strong></td>
+                                <td><span class="coeff-group-badge coeff-group-composite">Композит</span></td>
+                                <td class="text-center"><span class="coeff-value">15.0</span></td>
+                                <td><span class="coeff-note">🏆 МАКСИМАЛЬНЫЙ КОЭФФИЦИЕНТ!</span></td>
+                            </tr>
+                            <!-- ТЕКСТИЛЬ -->
+                            <tr>
+                                <td><strong>Текстиль (одежда, ветошь на переработку)</strong></td>
+                                <td><span class="coeff-group-badge coeff-group-textile">Текстиль</span></td>
+                                <td class="text-center"><span class="coeff-value">2.5</span></td>
+                                <td></td>
+                            </tr>
+                            <!-- ПРОЧЕЕ -->
+                            <tr>
+                                <td><strong>Силиконовые формы / Покрытия</strong></td>
+                                <td><span class="coeff-group-badge coeff-group-other">Прочее</span></td>
+                                <td class="text-center"><span class="coeff-value">9.0</span></td>
+                                <td><span class="coeff-note">Редко перерабатывается, бонус за ответственность</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Информационная карточка -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow" style="border-top: 4px solid var(--eco-green);">
+            <div class="card-body text-center py-5">
+                <h5 class="mb-3">🌍 Как работает система баллов?</h5>
+                <p class="text-muted mb-3"><strong>Баллы = Вес вторсырья (кг) × Коэффициент материала</strong></p>
+                <p class="text-muted small mb-4">Чем сложнее переработать материал, тем выше коэффициент. Ваш вклад в экологию вознаграждается!</p>
+                {% if not current_user.is_authenticated %}
+                    <hr class="my-4">
+                    <a href="{{ url_for('register') }}" class="btn btn-success btn-lg">📝 Зарегистрироваться</a>
+                    <p class="mt-3 text-muted">Уже есть аккаунт? <a href="{{ url_for('login') }}" class="text-decoration-none">Войти</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const canvas = document.getElementById('wasteChart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const personalDates = {{ personal_dates|tojson }};
+    const personalWeights = {{ personal_weights|tojson }};
+    const avgDates = {{ avg_dates|tojson }};
+    const avgWeights = {{ avg_weights|tojson }};
+
+    const datasets = [];
+
+    if (personalDates.length > 0 && personalWeights.length > 0) {
+        const personalData = personalDates.map((d, i) => ({
+            x: d,
+            y: personalWeights[i]
+        }));
+
+        datasets.push({
+            label: 'Мои сдачи (кг)',
+            data: personalData,
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+            showLine: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            borderWidth: 2
+        });
+    }
+
+    if (avgDates.length > 0 && avgWeights.length > 0) {
+        const avgData = avgDates.map((d, i) => ({
+            x: d,
+            y: avgWeights[i]
+        }));
+
+        datasets.push({
+            label: 'Среднее по всем (кг)',
+            data: avgData,
+            borderColor: 'rgb(255, 99, 132)',
+            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+            showLine: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            borderWidth: 2
+        });
+    }
+
+    if (datasets.length === 0) return;
+
+    new Chart(ctx, {
+        type: 'line',
+        data: { datasets: datasets },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + ' кг';
+                        }
+                    }
+                },
+                legend: {
+                    display: true,
+                    position: 'bottom'
+                }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'day',
+                        tooltipFormat: 'dd.MM.yyyy',
+                        displayFormats: { day: 'dd.MM' }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Дата'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Вес (кг)'
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

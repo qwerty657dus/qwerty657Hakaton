@@ -1,0 +1,46 @@
+
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow">
+            <div class="card-header" style="background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%) !important;">
+                <h4 class="mb-0">✅ Подтверждение номера</h4>
+            </div>
+            <div class="card-body">
+                <p class="mb-3 text-center">На номер <strong>{{ user.phone }}</strong> отправлен код подтверждения.</p>
+                
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.code.label(class="form-label fw-bold") }}
+                        {{ form.code(class="form-control", placeholder="Введите 6-значный код", autofocus=true) }}
+                        {% if form.code.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.code.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-success btn-lg") }}
+                    </div>
+                </form>
+                
+                <hr class="my-4">
+                
+                <div class="text-center">
+                    <p class="mb-2 text-muted small">Не пришёл код?</p>
+                    <a href="{{ url_for('resend_code', user_id=user.id) }}" class="btn btn-outline-secondary btn-sm">
+                        Отправить код повторно
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer text-muted small text-center">
+                <i class="bi bi-shield-check"></i> Код действителен в течение 10 минут
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,105 @@
+
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>👑 Административная панель</h2>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header" style="background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%) !important;">
+                <h5 class="mb-0">📊 Статистика</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <p class="text-muted mb-1">Всего пользователей</p>
+                    <h3 style="color: var(--eco-green);">{{ users|length }}</h3>
+                </div>
+                <div class="mb-3">
+                    <p class="text-muted mb-1">✅ Подтверждённых</p>
+                    <h4>{{ users|selectattr('is_verified', 'equalto', true)|list|length }}</h4>
+                </div>
+                <div class="mb-3">
+                    <p class="text-muted mb-1">👑 Администраторов</p>
+                    <h4>{{ users|selectattr('is_admin', 'equalto', true)|list|length }}</h4>
+                </div>
+                <div>
+                    <p class="text-muted mb-1">👤 Обычных пользователей</p>
+                    <h4>{{ users|selectattr('is_admin', 'equalto', false)|list|length }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header" style="background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%) !important;">
+                <h5 class="mb-0">⚡ Быстрые действия</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('admin_users') }}" class="btn btn-outline-primary d-block mb-3 w-100">
+                    👥 Список пользователей
+                </a>
+                <a href="{{ url_for('add_submission') }}" class="btn btn-success d-block w-100">
+                    ➕ Добавить сдачу вторсырья
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-header" style="background: linear-gradient(90deg, #9b59b6 0%, #8e44ad 100%) !important;">
+        <h5 class="mb-0">📋 Последние пользователи</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ФИО</th>
+                        <th>Телефон</th>
+                        <th>Статус</th>
+                        <th>Роль</th>
+                        <th class="text-end">Баллы</th>
+                        <th>Дата регистрации</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users[-10:]|reverse %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td><strong>{{ user.full_name }}</strong></td>
+                        <td>{{ user.phone }}</td>
+                        <td>
+                            {% if user.is_verified %}
+                                <span class="badge bg-success">✅ Подтверждён</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">⚠️ Не подтверждён</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.is_admin %}
+                                <span class="badge bg-danger">👑 Админ</span>
+                            {% else %}
+                                <span class="badge bg-secondary">👤 Юзер</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end"><strong style="color: var(--eco-green);">{{ "%.2f"|format(user.get_total_points()) }}</strong></td>
+                        <td>{{ user.created_at.strftime('%d.%m.%Y') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            🐦 Пока нет зарегистрированных пользователей
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

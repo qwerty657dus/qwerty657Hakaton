@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-header" style="background: linear-gradient(90deg, #27ae60 0%, #229954 100%) !important;">
+                <h5 class="mb-0">👤 Профиль пользователя</h5>
+            </div>
+            <div class="card-body">
+                <h4>{{ user.full_name }}</h4>
+                <p class="text-muted">{{ user.phone }}</p>
+                <hr>
+                <div class="text-center">
+                    <h2 class="display-5" style="color: var(--eco-green);">{{ "%.2f"|format(total_points) }}</h2>
+                    <p class="lead">Всего баллов</p>
+                    {% if user_rank %}
+                    <p class="mb-0">
+                        🏆 Место в рейтинге: <strong>#{{ user_rank }}</strong>
+                    </p>
+                    {% endif %}
+                </div>
+                <hr>
+                <p><strong>📅 Дата регистрации:</strong> {{ user.created_at.strftime('%d.%m.%Y') }}</p>
+                <p><strong>📦 Всего сдач:</strong> {{ submissions|length }}</p>
+                {% if user.is_admin %}
+                    <span class="badge bg-danger">👑 Администратор</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header" style="background: linear-gradient(90deg, #2980b9 0%, #2874a6 100%) !important;">
+                <h5 class="mb-0">📋 История сдачи вторсырья</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if submissions %}
+                <div class="table-responsive">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Материал</th>
+                                <th class="text-center">Вес (кг)</th>
+                                <th class="text-end">Баллы</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sub in submissions %}
+                            <tr>
+                                <td>{{ sub.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                                <td>{{ sub.material.name }}</td>
+                                <td class="text-center">{{ "%.2f"|format(sub.weight_kg) }}</td>
+                                <td class="text-end"><strong style="color: var(--eco-green);">{{ "%.2f"|format(sub.points) }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: var(--eco-pale-green); font-weight: bold;">
+                                <th colspan="3">Итого:</th>
+                                <th class="text-end" style="color: var(--eco-green);">{{ "%.2f"|format(total_points) }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="card-body text-center py-5">
+                    <p class="text-muted mb-2">📭 У вас пока нет записей о сдаче вторсырья</p>
+                    <p class="text-muted small">Найдите ближайший пункт приёма и начинайте зарабатывать баллы!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
